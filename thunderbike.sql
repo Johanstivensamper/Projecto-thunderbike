@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 30-03-2024 a las 01:02:11
--- Versión del servidor: 10.4.28-MariaDB
--- Versión de PHP: 8.2.4
+-- Tiempo de generación: 16-09-2024 a las 18:18:15
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.1.25
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Base de datos: `bikerjl`
+-- Base de datos: `thunderbike`
 --
 
 -- --------------------------------------------------------
@@ -39,9 +39,7 @@ CREATE TABLE `clientes` (
 --
 
 INSERT INTO `clientes` (`id`, `nombre`, `direccion`, `telefono`) VALUES
-(1, 'Juan Pérez', 'Calle 123, Ciudad', '123456789'),
-(2, 'María Gómez', 'Avenida 456, Pueblo', '987654321'),
-(3, 'Carlos Duran', 'carrera123,pueblo', '535262526');
+(28, 'Marcos Llorente', 'Calle 32 #87-65', '3215648956');
 
 -- --------------------------------------------------------
 
@@ -58,14 +56,6 @@ CREATE TABLE `detalle_venta` (
   `total_producto` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Volcado de datos para la tabla `detalle_venta`
---
-
-INSERT INTO `detalle_venta` (`id`, `venta_id`, `producto_id`, `cantidad`, `precio_unitario`, `total_producto`) VALUES
-(1, 1, 1, 1, 500.00, 500.00),
-(2, 2, 2, 2, 50.00, 100.00);
-
 -- --------------------------------------------------------
 
 --
@@ -76,16 +66,16 @@ CREATE TABLE `productos` (
   `id` int(11) NOT NULL,
   `nombre` varchar(100) DEFAULT NULL,
   `descripcion` text DEFAULT NULL,
-  `precio` decimal(10,2) DEFAULT NULL
+  `precio` decimal(10,2) DEFAULT NULL,
+  `imagen` blob DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `productos`
 --
 
-INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio`) VALUES
-(1, 'Bicicleta de montaña', 'Bicicleta de montaña con frenos de disco y suspensión delantera.', 500.00),
-(2, 'Casco de ciclismo', 'Casco de seguridad para ciclistas, talla única.', 50.00);
+INSERT INTO `productos` (`id`, `nombre`, `descripcion`, `precio`, `imagen`) VALUES
+(11, 'Casco de ciclismo', 'casco negro', 1500000.00, 0x75706c6f6164732f434153434f204445204d5545535452412e6a70672e77656270);
 
 -- --------------------------------------------------------
 
@@ -97,15 +87,6 @@ CREATE TABLE `productos_proveedores` (
   `producto_id` int(11) NOT NULL,
   `proveedor_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `productos_proveedores`
---
-
-INSERT INTO `productos_proveedores` (`producto_id`, `proveedor_id`) VALUES
-(1, 1),
-(1, 2),
-(2, 2);
 
 -- --------------------------------------------------------
 
@@ -140,16 +121,17 @@ CREATE TABLE `reparaciones` (
   `producto_id` int(11) DEFAULT NULL,
   `descripcion` text DEFAULT NULL,
   `costo` decimal(10,2) DEFAULT NULL,
-  `fecha_reparacion` date DEFAULT NULL
+  `fecha_reparacion` date DEFAULT NULL,
+  `usuario_id` int(11) DEFAULT NULL,
+  `mecanico_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `reparaciones`
 --
 
-INSERT INTO `reparaciones` (`id`, `cliente_id`, `producto_id`, `descripcion`, `costo`, `fecha_reparacion`) VALUES
-(1, 1, 1, 'Reemplazo de cadena y ajuste de cambios.', 50.00, '2024-03-07'),
-(2, 2, 1, 'Reparación de pinchazo en rueda trasera.', 20.00, '2024-03-08');
+INSERT INTO `reparaciones` (`id`, `cliente_id`, `producto_id`, `descripcion`, `costo`, `fecha_reparacion`, `usuario_id`, `mecanico_id`) VALUES
+(23, 28, 11, 'barbuquejo', 5000.00, '2024-09-16', 15, 15);
 
 -- --------------------------------------------------------
 
@@ -161,15 +143,6 @@ CREATE TABLE `reparaciones_proveedores` (
   `reparacion_id` int(11) NOT NULL,
   `proveedor_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `reparaciones_proveedores`
---
-
-INSERT INTO `reparaciones_proveedores` (`reparacion_id`, `proveedor_id`) VALUES
-(1, 1),
-(1, 2),
-(2, 2);
 
 -- --------------------------------------------------------
 
@@ -194,7 +167,8 @@ CREATE TABLE `usuarios` (
 INSERT INTO `usuarios` (`id`, `nombre`, `correo`, `clave`, `rol`, `fecha_creacion`, `fecha_modificacion`) VALUES
 (10, 'anderson acosta ', 'anderson12@yahoo.com', '827ccb0eea8a706c4c34a16891f84e7b', 'vendedor', '2024-03-29 05:03:01', NULL),
 (14, 'javier leon', 'javi@hotmail.com', '827ccb0eea8a706c4c34a16891f84e7b', 'administrador', '2024-03-29 05:14:11', NULL),
-(15, 'johan samper', 'johan123@yahoo.com', '01cfcd4f6b8770febfb40cb906715822', 'mecanico', '2024-03-29 05:15:45', NULL);
+(15, 'johan samper', 'johan123@yahoo.com', '01cfcd4f6b8770febfb40cb906715822', 'mecanico', '2024-03-29 05:15:45', NULL),
+(16, 'javier', 'leon@gmail.com', '827ccb0eea8a706c4c34a16891f84e7b', 'mecanico', '2024-08-24 13:56:31', NULL);
 
 -- --------------------------------------------------------
 
@@ -208,19 +182,17 @@ CREATE TABLE `ventas` (
   `fecha_venta` date DEFAULT NULL,
   `total` decimal(10,2) DEFAULT NULL,
   `descripcion_venta` text DEFAULT NULL,
-  `producto_vendido_id` int(11) DEFAULT NULL
+  `producto_vendido_id` int(11) DEFAULT NULL,
+  `usuario_id` int(11) DEFAULT NULL,
+  `vendedor` varchar(40) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `ventas`
 --
 
-INSERT INTO `ventas` (`id`, `cliente_id`, `fecha_venta`, `total`, `descripcion_venta`, `producto_vendido_id`) VALUES
-(1, 1, '2024-03-05', 550.00, 'venta de bicicleta de montaña', 1),
-(2, 2, '2024-03-06', 600.00, 'casco de ciclismo', 2),
-(3, 1, '2024-03-05', 550.00, 'Venta de bicicleta de montaña', 1),
-(4, 2, '2024-03-06', 100.00, 'Venta de cascos de ciclismo', 2),
-(5, 3, '2024-03-03', 59000.00, 'rueda trasera', 1);
+INSERT INTO `ventas` (`id`, `cliente_id`, `fecha_venta`, `total`, `descripcion_venta`, `producto_vendido_id`, `usuario_id`, `vendedor`) VALUES
+(18, 28, '2024-09-16', 1500000.00, 'negro', 11, 10, '');
 
 --
 -- Índices para tablas volcadas
@@ -265,7 +237,8 @@ ALTER TABLE `proveedores`
 ALTER TABLE `reparaciones`
   ADD PRIMARY KEY (`id`),
   ADD KEY `cliente_id` (`cliente_id`),
-  ADD KEY `producto_id` (`producto_id`);
+  ADD KEY `producto_id` (`producto_id`),
+  ADD KEY `reparaciones_ibfk_3` (`usuario_id`);
 
 --
 -- Indices de la tabla `reparaciones_proveedores`
@@ -287,7 +260,8 @@ ALTER TABLE `usuarios`
 ALTER TABLE `ventas`
   ADD PRIMARY KEY (`id`),
   ADD KEY `cliente_id` (`cliente_id`),
-  ADD KEY `producto_vendido_id` (`producto_vendido_id`);
+  ADD KEY `producto_vendido_id` (`producto_vendido_id`),
+  ADD KEY `ventas_ibfk_3` (`usuario_id`);
 
 --
 -- AUTO_INCREMENT de las tablas volcadas
@@ -297,7 +271,7 @@ ALTER TABLE `ventas`
 -- AUTO_INCREMENT de la tabla `clientes`
 --
 ALTER TABLE `clientes`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_venta`
@@ -309,7 +283,7 @@ ALTER TABLE `detalle_venta`
 -- AUTO_INCREMENT de la tabla `productos`
 --
 ALTER TABLE `productos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedores`
@@ -321,19 +295,19 @@ ALTER TABLE `proveedores`
 -- AUTO_INCREMENT de la tabla `reparaciones`
 --
 ALTER TABLE `reparaciones`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT de la tabla `usuarios`
 --
 ALTER TABLE `usuarios`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `ventas`
 --
 ALTER TABLE `ventas`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- Restricciones para tablas volcadas
@@ -358,7 +332,8 @@ ALTER TABLE `productos_proveedores`
 --
 ALTER TABLE `reparaciones`
   ADD CONSTRAINT `reparaciones_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
-  ADD CONSTRAINT `reparaciones_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`);
+  ADD CONSTRAINT `reparaciones_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`),
+  ADD CONSTRAINT `reparaciones_ibfk_3` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`);
 
 --
 -- Filtros para la tabla `reparaciones_proveedores`
@@ -372,7 +347,8 @@ ALTER TABLE `reparaciones_proveedores`
 --
 ALTER TABLE `ventas`
   ADD CONSTRAINT `ventas_ibfk_1` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`),
-  ADD CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`producto_vendido_id`) REFERENCES `productos` (`id`);
+  ADD CONSTRAINT `ventas_ibfk_2` FOREIGN KEY (`producto_vendido_id`) REFERENCES `productos` (`id`),
+  ADD CONSTRAINT `ventas_ibfk_3` FOREIGN KEY (`usuario_id`) REFERENCES `usuarios` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -1,133 +1,259 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>thunderbike Inicio</title>
-  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" type="thundrbike/png" href="img/thunderbike.png">
-  <style>
-    .password-toggle {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-    }
-    header {
-      display: flex;
-      align-items: center;
-      width: 40%;
-      margin: 50px auto 0px;
-    }
+<?php
+session_start();
 
-    header img {
-      margin-right: 50px; /* Espacio entre el logo y el texto */
-    }
-  
-  #background-video {
-  position: fixed;
-  right: 0;
-  bottom: 0;
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
-  z-index: -1;
-  background-size: cover;
+if (!isset($_SESSION['username'])) {
+    header('location: logeo.php');
+    exit();
 }
 
-  </style>
+$role = $_SESSION['role'];
+?>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>THUNDERBIKE</title>
+    <link rel="icon" type="image/png" href="img/thunderbikes.png">
+    <style>
+        /* Normalización de márgenes y padding */
+        * {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        body {
+            font-size: 120%;
+            background: #f5f5f5;
+        }
+
+        .header {
+            width: 60%;
+            margin: 40px auto 0px;
+            color: white;
+            background: #5F9EA0;
+            text-align: center;
+            border: 1px solid #B0C4DE;
+            border-bottom: none;
+            border-radius: 10px 10px 0px 0px;
+            padding: 20px;
+        }
+
+        form, .content {
+            width: 70%;
+            margin: 0px auto;
+            padding: 20px;
+            border: 1px solid #B0C4DE;
+            background: white;
+            border-radius: 10px 0px 10px 10px;
+        }
+
+        .input-group {
+            margin: 10px 0px 10px 0px;
+        }
+
+        .input-group label {
+            display: block;
+            text-align: left;
+            margin: 3px;
+        }
+
+        .input-group input {
+            height: 30px;
+            width: 93%;
+            padding: 5px 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid gray;
+        }
+
+        .btn {
+            padding: 10px;
+            font-size: 15px;
+            color: rgb(12, 12, 12);
+            background: #ffc600;
+            border: none;
+            border-radius: 5px;
+        }
+
+        .error {
+            width: 92%; 
+            margin: 0px auto; 
+            padding: 10px; 
+            border: 1px solid #a94442; 
+            color: #a94442; 
+            background: #f2dede; 
+            border-radius: 5px; 
+            text-align: left;
+        }
+
+        .success {
+            color: #3c763d; 
+            background: #dff0d8; 
+            border: 1px solid #3c763d;
+            margin-bottom: 20px;
+        }
+
+        .navtop {
+            background-color: #2f3947;
+            height: 60px;
+            width: 100%;
+            border: 0;
+        }
+
+        .navtop div {
+            display: flex;
+            margin: 0 auto;
+            width: 1000px;
+            height: 100%;
+        }
+
+        .navtop div h1, .navtop div a {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .navtop div h1 {
+            flex: 1;
+            font-size: 24px;
+            padding: 0;
+            margin: 0;
+            color: #eaebed;
+            font-weight: normal;
+        }
+
+        .navtop div a {
+            padding: 0 20px;
+            text-decoration: none;
+            color: #c1c4c8;
+            font-weight: bold;
+        }
+
+        .navtop div a:hover {
+            color: #eaebed;
+        }
+
+        /* Estilo para el botón seleccionado */
+        .button-selected {
+            background-color: gold;
+        }
+
+        /* Estilo para el botón al pasar el mouse sobre él */
+        .button:hover {
+            background-color: lightblue;
+        }
+
+        /* Estilo para cambiar el color del texto del botón "Cerrar Sesión" al pasar el mouse sobre él */
+        #cerrarSesionBtn:hover {
+            color: red;
+        }
+
+        /* Estilo para el video de fondo */
+        #background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            object-fit: cover;
+        }
+    </style>
 </head>
 <body>
+<nav class="navtop">
+    <div>
+        <img src="img/thunderbikes.png" alt="thunderbikes" style="width: 55px; height: 55px;">
+        <h1>THUNDERBIKE</h1>
+        <div class="container">
+            <div class="button-container">
+                <a href="perfil.php" id="perfilBtn" class="button">Perfil</a>
+                
+                <!-- Opciones para el administrador -->
+                <?php if ($role == 'administrador'): ?>
+                    <a href="clientes.php" id="clientesBtn" class="button">Clientes</a>
+                    <a href="productos.php" id="productosBtn" class="button">Productos</a>
+                    <a href="proveedores.php" id="proveedoresBtn" class="button">Proveedores</a>
+                    <a href="ventas.php" id="ventasBtn" class="button">Ventas</a>
+                    <a href="reparaciones.php" id="reparacionesBtn" class="button">Reparaciones</a>
+                <?php endif; ?>
+                
+                <!-- Opciones para el vendedor (sin productos repetidos) -->
+                <?php if ($role == 'vendedor'): ?>
+                    <a href="ventas.php" id="ventasBtn" class="button">Ventas</a>
+                <?php endif; ?>
+
+                <!-- Opciones para el mecánico -->
+                <?php if ($role == 'mecanico'): ?>
+                    <a href="reparaciones.php" id="reparacionesBtn" class="button">Reparaciones</a>
+                <?php endif; ?>
+
+                <a href="index.php?logout='1'" id="cerrarSesionBtn" class="button special">Cerrar Sesión</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div>
+    <?php if ($role == 'administrador'): ?>
+        <h1 style="color: gold;">Bienvenido al Panel de Administrador</h1>
+        <p style="color: gold;">Esta es una página exclusiva para administradores.</p>
+    <?php elseif ($role == 'mecanico'): ?>
+        <h1 style="color: gold;">Bienvenido al Panel de Mecánico</h1>
+        <p style="color: gold;">Esta es una página exclusiva para mecánicos.</p>
+    <?php elseif ($role == 'vendedor'): ?>
+        <h1 style="color: gold;">Bienvenido al Panel de Vendedor</h1>
+        <p style="color: gold;">Esta es una página exclusiva para vendedores.</p>
+    <?php endif; ?>
+</div>
+
 <video id="background-video" autoplay muted loop>
-  <source src="img/bicicletas.mp4" type="video/mp4">
-  Your browser does not support the video tag.
+    <source src="img/salto2.mp4" type="video/mp4">
+    Tu navegador no admite la etiqueta de video.
 </video>
-  <header>
-  <img src="img/thunderbike.png" alt="thunderbike" style="width: 65px; height: 65px;">
-    <h1>THUNDERBIKE</h1>
-  </header>
-  <main>
-    <!-- Botón de inicio de sesión -->
-    <div class="container">
-      <a href="logeo.php" class="logo-btn">Iniciar Sesión</a>
+
+<!-- mensaje de notificación -->
+<?php if (isset($_SESSION['success'])) : ?>
+    <div class="error success">
+        <h3>
+            <?php 
+            echo $_SESSION['success']; 
+            unset($_SESSION['success']);
+            ?>
+        </h3>
     </div>
+<?php endif; ?>
 
-    <!-- Carrusel -->
-    <div id="carouselExampleSlidesOnly" class="carousel slide" data-ride="carousel">
-      <div class="carousel-inner">
-        <div class="carousel-item active">
-          <img src="img/tx.png" class="d-block w-100" alt="...">
-        </div>
-        <div class="carousel-item">
-          <img src="img/bici.png" class="d-block w-100" alt="...">
-        </div>
-        <div class="carousel-item">
-          <img src="img/terreno.png" class="d-block w-100" alt="...">
-        </div>
-      </div>
-    </div>
+<!-- información del usuario registrado -->
+<?php if (isset($_SESSION['username'])) : ?>
+    <p><strong style="font-size: 24px; color: #efb810;"><?php echo $_SESSION['username']; ?></strong></p>
+<?php endif; ?>
 
-    <section class="about-us">
-      <h2><center>Sobre nosotros</center></h2>
-      <p>Bienvenido a nuestra tienda de bicicletas, donde la pasión por el ciclismo se fusiona con el compromiso de ofrecerte la mejor experiencia sobre dos ruedas. Nos enorgullece ser mucho más que un simple punto de venta;
-         somos un destino para ciclistas de todos los niveles que buscan no solo productos de calidad, sino también un equipo apasionado que comparte su entusiasmo por el ciclismo.</p>
-      <p>En nuestro establecimiento, cada visita es una oportunidad para sumergirse en el mundo emocionante de las bicicletas. Desde los principiantes hasta los ciclistas experimentados, todos son recibidos con la misma calidez y dedicación.
-       Nuestro equipo está compuesto por verdaderos entusiastas del ciclismo, personas que viven y respiran la cultura ciclista y que están aquí no solo como vendedores, sino como compañeros de viaje en tu emocionante travesía ciclista.</p>
-      <p>Nuestra misión es simple pero poderosa: proporcionarte no solo productos de primera calidad, sino también una experiencia de compra excepcional. Nos esforzamos por ser más que una tienda; somos una comunidad donde los ciclistas pueden reunirse,
-      compartir experiencias y obtener el conocimiento y el apoyo que necesitan para llevar su pasión al siguiente nivel.</p>
-      <p>Desde bicicletas de montaña diseñadas para conquistar senderos escarpados hasta bicicletas de carretera aerodinámicas para desafiar el asfalto, nuestro amplio catálogo abarca una variedad de estilos, marcas y modelos para satisfacer
-      las necesidades y deseos de cada ciclista. Además de bicicletas, también ofrecemos una amplia gama de accesorios y equipo, desde cascos y luces hasta ropa técnica y herramientas de mantenimiento, todo cuidadosamente seleccionado para mejorar tu experiencia en cada viaje.</p>
-      <p>Pero más allá de simplemente ofrecerte productos, estamos aquí para ofrecerte orientación y asesoramiento experto. Nos encanta compartir nuestro conocimiento y experiencia contigo, ya sea que estés buscando tu primera bicicleta o buscando mejorar
-      tu equipo actual. Estamos comprometidos a ayudarte a encontrar la bicicleta perfecta que se adapte a tus necesidades, habilidades y objetivos, porque creemos que cada ciclista merece tener una experiencia excepcional sobre dos ruedas.</p>
-      <p>En resumen, en nuestra tienda no solo encontrarás bicicletas y accesorios de alta calidad, sino también un equipo apasionado y comprometido que está aquí para inspirarte, apoyarte y ayudarte a alcanzar tus metas ciclistas.
-      Únete a nosotros y descubre el placer y la libertad de pedalear en nuestra apasionante comunidad ciclista. ¡Bienvenido a tu nueva casa para todo lo relacionado con el ciclismo!</p>
+<script>
+    // Selecciona el botón "Cerrar Sesión"
+    const logoutButton = document.getElementById('cerrarSesionBtn');
 
-    </section>
-
-    <section class="redes-sociales">
-      <h2><center>Contáctanos en redes sociales</center></h2>
-      <ul>
-        <center>
-        <img src="img/facebook.png" alt="" style="width: 50px; height: 50px;">
-        <li><a href="https://www.facebook.com/" target="_blank">Facebook</a></li>
-        <img src="img/Twitter.png" alt="" style="width: 50px; height: 50px;">
-        <li><a href="https://twitter.com/" target="_blank">Twitter</a></li>
-        <img src="img/instagram.png" alt="" style="width: 50px; height: 50px;">
-        <li><a href="https://www.instagram.com/" target="_blank">Instagram</a></li>
-        </center>
-      </ul>
-    </section>
-  </main>
-  
-  <footer>
-    <center>V1.0.1 © Todos los derechos reservados. Thunderbike</center>
-  </footer>
-
-  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-  <script src="https://kit.fontawesome.com/a076d05399.js"></script> <!-- Font Awesome -->
-  
-  <script>
-    // Función para alternar entre mostrar/ocultar la contraseña al hacer clic en el icono del ojo
-    var passwordToggles = document.querySelectorAll(".password-toggle");
-    passwordToggles.forEach(function(toggle) {
-      toggle.addEventListener("click", function() {
-        var passwordInput = this.previousElementSibling;
-        if (passwordInput.type === "password") {
-          passwordInput.type = "text";
-          this.classList.remove("fa-eye-slash");
-          this.classList.add("fa-eye");
-        } else {
-          passwordInput.type = "password";
-          this.classList.remove("fa-eye");
-          this.classList.add("fa-eye-slash");
-        }
-      });
+    // Agrega un listener de eventos cuando el mouse entra al botón
+    logoutButton.addEventListener('mouseenter', () => {
+        logoutButton.style.color = 'red';
     });
-  </script>
+
+    // Agrega un listener de eventos cuando el mouse sale del botón
+    logoutButton.addEventListener('mouseleave', () => {
+        logoutButton.style.color = 'white';
+    });
+</script>
+
+<script>
+    var buttons = document.querySelectorAll('.button');
+
+    buttons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            buttons.forEach(function(btn) {
+                btn.classList.remove('button-selected');
+            });
+            button.classList.add('button-selected');
+        });
+    });
+</script>
+
 </body>
 </html>

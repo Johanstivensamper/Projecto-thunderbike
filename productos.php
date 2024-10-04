@@ -1,225 +1,409 @@
+<?php
+// Conexión a la base de datos usando PDO
+$servername = "localhost";
+$username = "root";
+$password = "";
+$dbname = "thunderbike";
+
+try {
+    $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+    // Verificar si la columna 'imagen' existe
+    $stmt = $pdo->query("SHOW COLUMNS FROM productos LIKE 'imagen'");
+    if ($stmt->rowCount() == 0) {
+        // Si la columna no existe, la añadimos
+        $pdo->exec("ALTER TABLE productos ADD COLUMN imagen VARCHAR(255)");
+        echo "Columna 'imagen' añadida con éxito.";
+    }
+} catch (PDOException $e) {
+    die("Error de conexión o modificación de la tabla: " . $e->getMessage());
+}
+
+// Controlador de productos
+class ConexionProductos {
+    private $pdo;
+
+    public function __construct($pdo) {
+        $this->pdo = $pdo;
+    }
+
+    // Crear un nuevo producto
+    public function crearProducto($nombre, $descripcion, $precio, $imagenArchivo) {
+        $directorio = "uploads/"; // Carpeta donde se guardarán las imágenes
+
+        // Verificar si la carpeta 'uploads' existe, y si no, crearla
+        if (!is_dir($directorio)) {
+            mkdir($directorio, 0777, true);
+        }
+
+        $nombreArchivo = basename($imagenArchivo['name']);
+        $rutaArchivo = $directorio . $nombreArchivo;
+        $tipoArchivo = strtolower(pathinfo($rutaArchivo, PATHINFO_EXTENSION));
+
+        // Validar que el archivo es una imagen
+        $check = getimagesize($imagenArchivo['tmp_name']);
+        if ($check !== false) {
+            // Mover el archivo subido a la carpeta 'uploads'
+            if (move_uploaded_file($imagenArchivo['tmp_name'], $rutaArchivo)) {
+                // Insertar producto en la base de datos con la ruta de la imagen
+                $sql = "INSERT INTO productos (nombre, descripcion, precio, imagen) VALUES (:nombre, :descripcion, :precio, :imagen)";
+                $stmt = $this->pdo->prepare($sql);
+                return $stmt->execute([
+                    ':nombre' => $nombre,
+                    ':descripcion' => $descripcion,
+                    ':precio' => $precio,
+                    ':imagen' => $rutaArchivo
+                ]);
+            } else {
+                throw new Exception("Error al mover la imagen a la carpeta 'uploads'. Verifica los permisos y la ruta.");
+            }
+        } else {
+            throw new Exception("El archivo no es una imagen válida.");
+        }
+    }
+
+    // Obtener todos los productos
+    public function obtenerProductos($offset = 0, $limit = 10) {
+        $sql = "SELECT * FROM productos LIMIT :offset, :limit";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Obtener el número total de productos
+    public function obtenerTotalProductos() {
+        $sql = "SELECT COUNT(*) FROM productos";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchColumn();
+    }
+
+    // Obtener un producto por ID
+    public function obtenerProductoPorId($id) {
+        $sql = "SELECT * FROM productos WHERE id = :id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    // Actualizar un producto
+    public function actualizarProducto($id, $nombre, $descripcion, $precio, $imagenArchivo) {
+        $sql = "UPDATE productos SET nombre = :nombre, descripcion = :descripcion, precio = :precio, imagen = :imagen WHERE id = :id";
+
+        $rutaArchivo = '';
+        if ($imagenArchivo['tmp_name'] !== '') {
+            // Subir la nueva imagen si se ha proporcionado
+            $directorio = "uploads/";
+
+            if (!is_dir($directorio)) {
+                mkdir($directorio, 0777, true);
+            }
+
+            $nombreArchivo = basename($imagenArchivo['name']);
+            $rutaArchivo = $directorio . $nombreArchivo;
+
+            if (!move_uploaded_file($imagenArchivo['tmp_name'], $rutaArchivo)) {
+                throw new Exception("Error al mover la imagen a la carpeta 'uploads'.");
+            }
+        }
+
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([
+            ':id' => $id,
+            ':nombre' => $nombre,
+            ':descripcion' => $descripcion,
+            ':precio' => $precio,
+            ':imagen' => $rutaArchivo
+        ]);
+    }
+
+    // Eliminar un producto
+    public function eliminarProducto($id) {
+        $sql = "DELETE FROM productos WHERE id = :id";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([':id' => $id]);
+    }
+}
+
+// Instanciar el controlador de productos
+$conexionProductos = new ConexionProductos($pdo);
+
+// Manejar acciones del CRUD
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['action'])) {
+        switch ($_POST['action']) {
+            case 'crear':
+                $conexionProductos->crearProducto($_POST['nombre'], $_POST['descripcion'], $_POST['precio'], $_FILES['imagen']);
+                break;
+            case 'actualizar':
+                $conexionProductos->actualizarProducto($_POST['id'], $_POST['nombre'], $_POST['descripcion'], $_POST['precio'], $_FILES['imagen']);
+                break;
+            case 'eliminar':
+                $conexionProductos->eliminarProducto($_POST['id']);
+                break;
+        }
+    }
+}
+
+// Número de productos por página
+$productosPorPagina = 6;
+
+// Calcular la página actual
+$paginaActual = isset($_GET['pagina']) ? (int)$_GET['pagina'] : 1;
+$paginaActual = max(1, $paginaActual);
+
+// Calcular el desplazamiento
+$offset = ($paginaActual - 1) * $productosPorPagina;
+
+// Obtener el total de productos y el número total de páginas
+$totalProductos = $conexionProductos->obtenerTotalProductos();
+$totalPaginas = ceil($totalProductos / $productosPorPagina);
+
+// Obtener los productos para la página actual
+$productos = $conexionProductos->obtenerProductos($offset, $productosPorPagina);
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Productos</title>
+    <link rel="icon" type="image/png" href="img/thunderbikes.png">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="icon" type="thundrbike/png" href="img/thunderbike.png">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            position: relative;
             margin: 0;
             padding: 0;
-            background-image: url('imagenes/bici.jpg'); /* Reemplaza 'bici.jpg' con la ruta de tu imagen de fondo */
-            background-size: cover;
-            background-repeat: no-repeat;
-            background-position: center;
+            overflow-x: hidden; /* Evitar el desbordamiento horizontal */
+            color: black; /* Color negro para el texto */
         }
-
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.8);
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .product {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        /* Estilo para el video de fondo */
+        .background-video {
+    position: fixed; /* Cambia a fixed para que el video se quede fijo en la pantalla */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -1; /* Colocar el video detrás del contenido */
+}
+        .navtop {
+            background-color: goldenrod;
             padding: 10px;
-            border-bottom: 1px solid #ccc;
-            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1; /* Asegurarse de que la navegación esté encima del video */
         }
-
-        .product:hover {
-            background-color: #f9f9f9;
+        .navtop a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
         }
-
-        .product img {
-            width: 80px;
-            height: auto;
-            margin-right: 20px;
+        .navtop a:hover {
+            text-decoration: underline;
         }
-
-        .product-info {
-            flex: 1;
+        .btn-primary {
+            background-color: goldenrod;
+            border: none;
         }
-
-        .btn-home {
-            margin-bottom: 20px;
+        .btn-primary:hover {
+            background-color: darkgoldenrod;
         }
-
-        .btn-action {
-            margin-left: 10px;
+        .formulario-producto {
+            display: none;
+        }
+        .card {
+            border: 1px solid #ddd; /* Borde gris claro alrededor de la tarjeta */
+            border-radius: 5px; /* Bordes ligeramente redondeados */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra ligera para profundidad */
+            background-color: rgba(255, 255, 255, 0.8); /* Fondo blanco semi-transparente */
+            transition: box-shadow 0.3s; /* Transición suave para el efecto de sombra */
+        }
+        .card:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Efecto de sombra al pasar el mouse */
+        }
+        .card-img-top {
+            border-radius: 5px 5px 0 0; /* Bordes redondeados en la parte superior de la imagen */
+        }
+        .card-title, .card-text {
+            color: #000; /* Color negro para los textos dentro de la tarjeta */
+        }
+        .modal-content {
+            border-radius: 10px;
+        }
+        /* Asegurar que el contenido no quede oculto detrás del video */
+        .container {
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>
 <body>
+<nav class="navtop">
+        <div>
+            <div class="container">
+                <div class="button-container">
+                    <!-- Botones de navegación -->
+                    <a href="inicio.php" id="indexBtn" class="button">Inicio</a>
+                    <a href="perfil.php" id="perfilBtn" class="button">Perfil</a>
+                    <a href="clientes.php" id="clientesBtn" class="button">Clientes</a>
+                    <a href="productos.php" id="productosBtn" class="button">Productos</a>
+                    <a href="proveedores.php" id="proveedoresBtn" class="button active">Proveedores</a>
+                    <a href="ventas.php" id="ventasBtn" class="button">Ventas</a>
+                    <a href="reparaciones.php" id="reparacionesBtn" class="button">Reparaciones</a>
+                    <a href="index.php?logout='1'" id="cerrarSesionBtn" class="button special">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- Video de fondo -->
+    <video class="background-video" autoplay muted loop>
+        <source src="img/montaña.mp4" type="video/mp4">
+        Tu navegador no soporta el elemento de video.
+    </video>
+    
     <div class="container">
-        <a href="index.php" class="btn btn-primary btn-home float-right">Inicio</a>
-        <h1 class="text-center text-dark">Productos</h1>
+        <h1 class="text-center text-light mt-5">Productos</h1>
 
-        <?php
-        // Establecer conexión a la base de datos
-        $servername = "localhost";
-        $username = "root";
-        $password = "";
-        $dbname = "thunderbike";
+        <!-- Botón para agregar producto -->
+        <button class="btn btn-primary btn-agregar mb-4" id="btn-agregar">Agregar Producto</button>
 
-        $conn = new mysqli($servername, $username, $password, $dbname);
+        <!-- Formulario para crear producto -->
+        <form action="productos.php" method="POST" enctype="multipart/form-data" class="mb-4 formulario-producto">
+            <input type="hidden" name="action" value="crear">
+            <input type="hidden" name="id" value="">
+            <div class="form-group">
+                <label for="nombre">Nombre:</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="descripcion">Descripción:</label>
+                <textarea class="form-control" id="descripcion" name="descripcion" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="precio">Precio:</label>
+                <input type="number" class="form-control" id="precio" name="precio" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="imagen">Subir Imagen:</label>
+                <input type="file" class="form-control" id="imagen" name="imagen" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar Producto</button>
+        </form>
 
-        // Verificar la conexión
-        if ($conn->connect_error) {
-            die("Error de conexión: " . $conn->connect_error);
-        }
-
-        // Consultar productos
-        $sql = "SELECT id, nombre, descripcion, precio FROM productos";
-        $result = $conn->query($sql);
-
-        if ($result->num_rows > 0) {
-            while($row = $result->fetch_assoc()) {
-                echo '<div class="product">';
-                echo '<img src="mt.jpg" alt="' . $row["nombre"] . '">';
-                echo '<div class="product-info">';
-                echo '<h3>' . $row["nombre"] . '</h3>';
-                echo '<p>Descripción: ' . $row["descripcion"] . '</p>';
-                echo '<p>Precio: $' . $row["precio"] . '</p>';
-                echo '</div>';
-                echo '<div>';
-                echo '<button type="button" class="btn btn-info btn-action" onclick="editarProducto(' . $row["id"] . ', \'' . $row["nombre"] . '\', \'' . $row["descripcion"] . '\', \'' . $row["precio"] . '\')">Editar</button>';
-                echo '<button type="button" class="btn btn-danger btn-action" onclick="eliminarProducto(' . $row["id"] . ')">Eliminar</button>';
-                echo '</div>';
-                echo '</div>';
-            }
-        } else {
-            echo "No hay productos disponibles.";
-        }
-        $conn->close();
-        ?>
-
-        <button type="button" class="btn btn-success btn-action" data-toggle="modal" data-target="#agregarProductoModal">Agregar Producto</button>
+        <!-- Lista de productos -->
+        <div class="row">
+            <?php foreach ($productos as $producto): ?>
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <img src="<?php echo htmlspecialchars($producto['imagen']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($producto['nombre']); ?>">
+                        <div class="card-body">
+                            <h5 class="card-title"><?php echo htmlspecialchars($producto['nombre']); ?></h5>
+                            <p class="card-text"><?php echo htmlspecialchars($producto['descripcion']); ?></p>
+                            <p class="card-text"><strong>Precio: $<?php echo number_format($producto['precio'], 2); ?></strong></p>
+                            <button class="btn btn-primary btn-editar" data-id="<?php echo $producto['id']; ?>"
+                                data-nombre="<?php echo htmlspecialchars($producto['nombre']); ?>"
+                                data-descripcion="<?php echo htmlspecialchars($producto['descripcion']); ?>"
+                                data-precio="<?php echo $producto['precio']; ?>"
+                                data-imagen="<?php echo $producto['imagen']; ?>"
+                                data-toggle="modal" data-target="#modal-editar-producto">Editar</button>
+                            <form action="productos.php" method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="eliminar">
+                                <input type="hidden" name="id" value="<?php echo $producto['id']; ?>">
+                                <button type="submit" class="btn btn-danger">Eliminar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 
-    <!-- Formulario emergente para editar producto -->
-    <div class="modal fade" id="editarProductoModal" tabindex="-1" role="dialog" aria-labelledby="editarProductoModalLabel" aria-hidden="true">
+    <!-- Modal para Editar Producto -->
+    <div class="modal fade" id="modal-editar-producto" tabindex="-1" role="dialog" aria-labelledby="modal-editar-producto-label" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editarProductoModalLabel">Editar Producto</h5>
+                    <h5 class="modal-title" id="modal-editar-producto-label">Editar Producto</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
-                    <!-- Aquí va el formulario de edición de producto -->
-                    <form action="editar_producto.php" method="post" id="editarProductoForm" enctype="multipart/form-data">
-                        <input type="hidden" name="id" id="editarProductoId">
+                    <form id="form-editar-producto" action="productos.php" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="actualizar">
+                        <input type="hidden" name="id" id="producto-id">
                         <div class="form-group">
-                            <label for="nombre">Nombre:</label>
-                            <input type="text" class="form-control" id="editarProductoNombre" name="nombre">
+                            <label for="editar-nombre">Nombre:</label>
+                            <input type="text" class="form-control" id="editar-nombre" name="nombre" required>
                         </div>
                         <div class="form-group">
-                            <label for="descripcion">Descripción:</label>
-                            <textarea class="form-control" id="editarProductoDescripcion" name="descripcion"></textarea>
+                            <label for="editar-descripcion">Descripción:</label>
+                            <textarea class="form-control" id="editar-descripcion" name="descripcion" required></textarea>
                         </div>
                         <div class="form-group">
-                            <label for="precio">Precio:</label>
-                            <input type="number" class="form-control" id="editarProductoPrecio" name="precio">
+                            <label for="editar-precio">Precio:</label>
+                            <input type="number" class="form-control" id="editar-precio" name="precio" step="0.01" required>
                         </div>
                         <div class="form-group">
-                            <label for="imagen">Imagen:</label>
-                            <input type="file" class="form-control-file" id="editarProductoImagen" name="imagen">
+                            <label for="editar-imagen">Subir Imagen:</label>
+                            <input type="file" class="form-control" id="editar-imagen" name="imagen">
                         </div>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary" onclick="submitEditarProductoForm()">Guardar Cambios</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Formulario emergente para agregar producto -->
-    <div class="modal fade" id="agregarProductoModal" tabindex="-1" role="dialog" aria-labelledby="agregarProductoModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="agregarProductoModalLabel">Agregar Producto</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <!-- Aquí va el formulario de agregar producto -->
-                    <form action="agregar_producto.php" method="post" id="agregarProductoForm" enctype="multipart/form-data">
-                        <div class="form-group">
-                            <label for="nombre">Nombre:</label>
-                            <input type="text" class="form-control" id="agregarProductoNombre" name="nombre">
-                        </div>
-                        <div class="form-group">
-                            <label for="descripcion">Descripción:</label>
-                            <textarea class="form-control" id="agregarProductoDescripcion" name="descripcion"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label for="precio">Precio:</label>
-                            <input type="number" class="form-control" id="agregarProductoPrecio" name="precio">
-                        </div>
-                        <div class="form-group">
-                            <label for="imagen">Imagen:</label>
-                            <input type="file" class="form-control-file" id="agregarProductoImagen" name="imagen">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary" onclick="submitAgregarProductoForm()">Agregar Producto</button>
-                </div>
-            </div>
-        </div>
+            <!-- Controles de paginación -->
+            <nav aria-label="Page navigation">
+            <ul class="pagination">
+                <li class="page-item <?php echo $paginaActual == 1 ? 'disabled' : ''; ?>">
+                    <a class="page-link" href="?pagina=<?php echo max(1, $paginaActual - 1); ?>" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <?php for ($i = 1; $i <= $totalPaginas; $i++): ?>
+                    <li class="page-item <?php echo $i == $paginaActual ? 'active' : ''; ?>">
+                        <a class="page-link" href="?pagina=<?php echo $i; ?>"><?php echo $i; ?></a>
+                    </li>
+                <?php endfor; ?>
+                <li class="page-item <?php echo $paginaActual == $totalPaginas ? 'disabled' : ''; ?>">
+                    <a class="page-link" href="?pagina=<?php echo min($totalPaginas, $paginaActual + 1); ?>" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
-    <script>
-        function editarProducto(id, nombre, descripcion, precio) {
-            document.getElementById('editarProductoId').value = id;
-            document.getElementById('editarProductoNombre').value = nombre;
-            document.getElementById('editarProductoDescripcion').value = descripcion;
-            document.getElementById('editarProductoPrecio').value = precio;
-            $('#editarProductoModal').modal('show');
-        }
-
-        function submitEditarProductoForm() {
-            document.getElementById('editarProductoForm').submit();
-        }
-
-        function submitAgregarProductoForm() {
-            document.getElementById('agregarProductoForm').submit();
-        }
-
-        function eliminarProducto(id) {
-            if (confirm("¿Estás seguro de que deseas eliminar este producto?")) {
-                $.ajax({
-                    url: 'eliminar_producto.php',
-                    type: 'POST',
-                    data: {id: id},
-                    success: function(response) {
-                        alert("Producto eliminado correctamente");
-                        window.location.reload();
-                    },
-                    error: function(xhr, status, error) {
-                        alert("Error al eliminar el producto");
-                    }
-                });
-            }
-        }
-    </script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Mostrar el formulario de agregar producto
+            $('#btn-agregar').click(function() {
+                $('.formulario-producto').toggle();
+            });
+
+            // Rellenar el modal con los datos del producto a editar
+            $('.btn-editar').click(function() {
+                var id = $(this).data('id');
+                var nombre = $(this).data('nombre');
+                var descripcion = $(this).data('descripcion');
+                var precio = $(this).data('precio');
+                
+                $('#producto-id').val(id);
+                $('#editar-nombre').val(nombre);
+                $('#editar-descripcion').val(descripcion);
+                $('#editar-precio').val(precio);
+            });
+        });
+    </script>
 </body>
 </html>
