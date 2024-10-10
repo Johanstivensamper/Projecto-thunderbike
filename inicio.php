@@ -1,6 +1,11 @@
 <?php
 session_start();
 
+// Configurar headers para evitar cache
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 if (!isset($_SESSION['username'])) {
     header('location: logeo.php');
     exit();
@@ -16,8 +21,8 @@ $role = $_SESSION['role'];
     <style>
         /* Normalización de márgenes y padding */
         * {
-            margin: 0px;
-            padding: 0px;
+            margin: 0;
+            padding: 0;
         }
 
         body {
@@ -27,27 +32,27 @@ $role = $_SESSION['role'];
 
         .header {
             width: 60%;
-            margin: 40px auto 0px;
+            margin: 40px auto 0;
             color: white;
             background: #5F9EA0;
             text-align: center;
             border: 1px solid #B0C4DE;
             border-bottom: none;
-            border-radius: 10px 10px 0px 0px;
+            border-radius: 10px 10px 0 0;
             padding: 20px;
         }
 
         form, .content {
             width: 70%;
-            margin: 0px auto;
+            margin: 0 auto;
             padding: 20px;
             border: 1px solid #B0C4DE;
             background: white;
-            border-radius: 10px 0px 10px 10px;
+            border-radius: 10px 0 10px 10px;
         }
 
         .input-group {
-            margin: 10px 0px 10px 0px;
+            margin: 10px 0;
         }
 
         .input-group label {
@@ -76,7 +81,7 @@ $role = $_SESSION['role'];
 
         .error {
             width: 92%; 
-            margin: 0px auto; 
+            margin: 0 auto; 
             padding: 10px; 
             border: 1px solid #a94442; 
             color: #a94442; 
@@ -114,8 +119,6 @@ $role = $_SESSION['role'];
         .navtop div h1 {
             flex: 1;
             font-size: 24px;
-            padding: 0;
-            margin: 0;
             color: #eaebed;
             font-weight: normal;
         }
@@ -123,30 +126,55 @@ $role = $_SESSION['role'];
         .navtop div a {
             padding: 0 20px;
             text-decoration: none;
-            color: #c1c4c8;
+            color: #E5A65E;
             font-weight: bold;
+            position: relative;
+        }
+
+        .tooltip {
+            display: none; 
+            position: absolute;
+            background-color: white;
+            border: 1px solid #B0C4DE;
+            padding: 2px 5px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            top: 6%;
+            left: 50%;
+            transform: translateX(-61%);
+            white-space: nowrap;
+            max-width: 150px;
+            max-height: 50px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tooltip a {
+            color: black;
+            text-decoration: none;
+        }
+
+        .tooltip a:hover {
+            color: #007BFF;
         }
 
         .navtop div a:hover {
             color: #eaebed;
         }
 
-        /* Estilo para el botón seleccionado */
         .button-selected {
             background-color: gold;
         }
 
-        /* Estilo para el botón al pasar el mouse sobre él */
         .button:hover {
             background-color: lightblue;
         }
 
-        /* Estilo para cambiar el color del texto del botón "Cerrar Sesión" al pasar el mouse sobre él */
         #cerrarSesionBtn:hover {
             color: red;
         }
 
-        /* Estilo para el video de fondo */
         #background-video {
             position: fixed;
             top: 0;
@@ -167,42 +195,31 @@ $role = $_SESSION['role'];
             <div class="button-container">
                 <a href="perfil.php" id="perfilBtn" class="button">Perfil</a>
                 
-                <!-- Opciones para el administrador -->
                 <?php if ($role == 'administrador'): ?>
                     <a href="clientes.php" id="clientesBtn" class="button">Clientes</a>
                     <a href="productos.php" id="productosBtn" class="button">Productos</a>
+                    <div class="tooltip" id="productosTooltip">
+                        <a href="bicicletas.php" class="dropdown-item">Bicicletas</a><br>
+                        <a href="accesorios.php" class="dropdown-item">Accesorios</a>
+                    </div>
                     <a href="proveedores.php" id="proveedoresBtn" class="button">Proveedores</a>
                     <a href="ventas.php" id="ventasBtn" class="button">Ventas</a>
                     <a href="reparaciones.php" id="reparacionesBtn" class="button">Reparaciones</a>
-                <?php endif; ?>
-                
-                <!-- Opciones para el vendedor (sin productos repetidos) -->
-                <?php if ($role == 'vendedor'): ?>
+                <?php elseif ($role == 'vendedor'): ?>
                     <a href="ventas.php" id="ventasBtn" class="button">Ventas</a>
-                <?php endif; ?>
-
-                <!-- Opciones para el mecánico -->
-                <?php if ($role == 'mecanico'): ?>
+                <?php elseif ($role == 'mecanico'): ?>
                     <a href="reparaciones.php" id="reparacionesBtn" class="button">Reparaciones</a>
                 <?php endif; ?>
 
-                <a href="index.php?logout='1'" id="cerrarSesionBtn" class="button special">Cerrar Sesión</a>
+                <a href="logout.php" id="cerrarSesionBtn" class="button special">Cerrar Sesión</a>
             </div>
         </div>
     </div>
 </nav>
 
 <div>
-    <?php if ($role == 'administrador'): ?>
-        <h1 style="color: gold;">Bienvenido al Panel de Administrador</h1>
-        <p style="color: gold;">Esta es una página exclusiva para administradores.</p>
-    <?php elseif ($role == 'mecanico'): ?>
-        <h1 style="color: gold;">Bienvenido al Panel de Mecánico</h1>
-        <p style="color: gold;">Esta es una página exclusiva para mecánicos.</p>
-    <?php elseif ($role == 'vendedor'): ?>
-        <h1 style="color: gold;">Bienvenido al Panel de Vendedor</h1>
-        <p style="color: gold;">Esta es una página exclusiva para vendedores.</p>
-    <?php endif; ?>
+    <h1 style="color: gold;">Bienvenido al Panel de <?= ucfirst($role) ?></h1>
+    <p style="color: gold;">Esta es una página exclusiva para <?= $role === 'administrador' ? 'administradores' : ($role === 'mecanico' ? 'mecánicos' : 'vendedores') ?>.</p>
 </div>
 
 <video id="background-video" autoplay muted loop>
@@ -210,7 +227,6 @@ $role = $_SESSION['role'];
     Tu navegador no admite la etiqueta de video.
 </video>
 
-<!-- mensaje de notificación -->
 <?php if (isset($_SESSION['success'])) : ?>
     <div class="error success">
         <h3>
@@ -222,35 +238,60 @@ $role = $_SESSION['role'];
     </div>
 <?php endif; ?>
 
-<!-- información del usuario registrado -->
 <?php if (isset($_SESSION['username'])) : ?>
     <p><strong style="font-size: 24px; color: #efb810;"><?php echo $_SESSION['username']; ?></strong></p>
 <?php endif; ?>
 
 <script>
-    // Selecciona el botón "Cerrar Sesión"
-    const logoutButton = document.getElementById('cerrarSesionBtn');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Verificar si hay un usuario activo
+        const username = "<?php echo isset($_SESSION['username']) ? $_SESSION['username'] : ''; ?>";
+        
+        if (!username) {
+            // Redirigir si no hay sesión activa
+            window.location.href = 'logeo.php';
+        }
 
-    // Agrega un listener de eventos cuando el mouse entra al botón
-    logoutButton.addEventListener('mouseenter', () => {
-        logoutButton.style.color = 'red';
-    });
+        const productosBtn = document.getElementById('productosBtn');
+        const productosTooltip = document.getElementById('productosTooltip');
 
-    // Agrega un listener de eventos cuando el mouse sale del botón
-    logoutButton.addEventListener('mouseleave', () => {
-        logoutButton.style.color = 'white';
-    });
-</script>
+        // Mostrar tooltip
+        productosBtn.addEventListener('mouseenter', () => {
+            productosTooltip.style.display = 'block';
+        });
 
-<script>
-    var buttons = document.querySelectorAll('.button');
+        // Ocultar tooltip
+        productosBtn.addEventListener('mouseleave', () => {
+            productosTooltip.style.display = 'none';
+        });
 
-    buttons.forEach(function(button) {
-        button.addEventListener('click', function() {
-            buttons.forEach(function(btn) {
-                btn.classList.remove('button-selected');
+        // Mantener el tooltip visible al pasar el mouse sobre él
+        productosTooltip.addEventListener('mouseenter', () => {
+            productosTooltip.style.display = 'block';
+        });
+
+        productosTooltip.addEventListener('mouseleave', () => {
+            productosTooltip.style.display = 'none';
+        });
+
+        // Cerrar sesión
+        const logoutButton = document.getElementById('cerrarSesionBtn');
+        logoutButton.addEventListener('mouseenter', () => {
+            logoutButton.style.color = 'red';
+        });
+        logoutButton.addEventListener('mouseleave', () => {
+            logoutButton.style.color = 'white';
+        });
+
+        // Selección de botones
+        const buttons = document.querySelectorAll('.button');
+        buttons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                buttons.forEach(function(btn) {
+                    btn.classList.remove('button-selected');
+                });
+                button.classList.add('button-selected');
             });
-            button.classList.add('button-selected');
         });
     });
 </script>
